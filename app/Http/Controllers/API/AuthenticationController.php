@@ -62,12 +62,26 @@ class AuthenticationController extends Controller
         return response()->json(['message' => 'Successfully logged out']);
     }
 
-    // Retrieve the authenticated user's details
-    public function me()
+
+    public function me(Request $request)
     {
-        $user = JWTAuth::parseToken()->authenticate();
-        return response()->json($user);
+        try {
+            $user = JWTAuth::parseToken()->authenticate();
+
+            if (!$user) {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+
+            return response()->json($user);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['error' => 'Token has expired'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json(['error' => 'Token is invalid'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
+
 
     // Refresh JWT token
     public function refresh()

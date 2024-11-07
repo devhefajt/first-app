@@ -30,7 +30,7 @@ class UpdateEmployeeRequest extends FormRequest
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:employees,email,' . $employeeId,
             'phone'         => 'required|string|max:20',
-            'image'         => 'image|mimes:jpeg,png,jpg,gif',
+            // 'image'         => 'image|mimes:jpeg,png,jpg,gif',
             'position'      => 'required|string|max:100',
             'department'    => 'required|string|max:100',
             'joining_date'  => 'required|date',

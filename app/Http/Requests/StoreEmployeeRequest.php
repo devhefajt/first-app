@@ -26,7 +26,7 @@ class StoreEmployeeRequest extends FormRequest
             'last_name'     => 'required|string|max:255',
             'email'         => 'required|email|unique:employees,email',
             'phone'         => 'required|string|max:15',
-            'image'         => 'required|image|mimes:jpeg,png,jpg,gif',
+            // 'image'         => 'required|image|mimes:jpeg,png,jpg,gif',
             'position'      => 'required|string|max:255',
             'department'    => 'required|string|max:255',
             'joining_date'  => 'required|date',

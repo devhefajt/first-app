@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Validator;
+use Nowakowskir\JWT\JWT;
+use Nowakowskir\JWT\TokenDecoded;
+use Nowakowskir\JWT\TokenEncoded;
 
 class AuthenticationController extends Controller
 {
@@ -30,7 +32,7 @@ class AuthenticationController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        $token = JWTAuth::fromUser($user);
+        $token = $this->createToken($user);
 
         return $this->respondWithToken($token);
     }
@@ -48,54 +50,38 @@ class AuthenticationController extends Controller
         }
 
         $credentials = $request->only('email', 'password');
-        if (!$token = JWTAuth::attempt($credentials)) {
+        $user = User::where('email', $credentials['email'])->first();
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        $token = $this->createToken($user);
 
         return $this->respondWithToken($token);
     }
 
-    // Logout the user
-    public function logout()
+    // Generate JWT token for a user
+    protected function createToken($user)
     {
-        JWTAuth::invalidate(JWTAuth::getToken());
-        return response()->json(['message' => 'Successfully logged out']);
-    }
+        $payload = [
+            'sub' => $user->id,
+            'exp' => time() + 3600, // 1 hour expiration
+        ];
+        
+        $tokenDecoded = new TokenDecoded($payload);
+        $privateKey = env('JWT_PRIVATE_KEY'); // Use JWT_SECRET if using HS256
 
-
-    public function me(Request $request)
-    {
-        try {
-            $user = JWTAuth::parseToken()->authenticate();
-
-            if (!$user) {
-                return response()->json(['error' => 'Unauthorized'], 401);
-            }
-
-            return response()->json($user);
-        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-            return response()->json(['error' => 'Token has expired'], 401);
-        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-            return response()->json(['error' => 'Token is invalid'], 401);
-        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
-
-
-    // Refresh JWT token
-    public function refresh()
-    {
-        return $this->respondWithToken(JWTAuth::refresh(JWTAuth::getToken()));
+        return $tokenDecoded->encode($privateKey, JWT::ALGORITHM_RS256);
     }
 
     // Format response with JWT token information
-    protected function respondWithToken($token)
+    protected function respondWithToken(TokenEncoded $token)
     {
         return response()->json([
-            'access_token' => $token,
+            'access_token' => $token->toString(),
             'token_type' => 'bearer',
-            'expires_in' => JWTAuth::factory()->getTTL() * 60
+            'expires_in' => 3600,
         ]);
     }
 }
